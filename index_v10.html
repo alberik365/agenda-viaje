@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda de viaje: 19/12/2025 → 17/01/2026</title>
+<style>
+  :root{
+    --bg:#f7f3ea;
+    --card:#fffaf2;
+    --accent:#e2b100;
+    --muted:#6d6a66;
+    --text:#2c2a28;
+    --grid:#e6decc;
+    --inrange:#fff3c2;
+    --lock:#ffd9d6;
+    --link:#0a5bbb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+  header{padding:16px 20px;border-bottom:1px solid var(--grid);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:rgba(255,250,242,.92)}
+  header h1{font-size:18px;margin:0}
+  .wrap{display:grid;grid-template-columns:1fr 360px;gap:16px;padding:16px;position:relative}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+  .cal{
+    position:relative;
+    border-radius:14px;
+    overflow:hidden;
+    padding:0.5px;
+    z-index:0;
+  }
+  .cal-bg{
+    position:fixed;
+    background-image:url('fondo_fuji.png');
+    background-size:cover;
+    background-position:center 82%;
+    background-repeat:no-repeat;
+    pointer-events:none;
+    z-index:-1;
+  }
+  .cal-bg::after{
+    content:"";
+    position:absolute; inset:0;
+    background:rgba(255,255,255,.20);
+  }
+  .month{background:rgba(255,250,242,.88);border:1px solid var(--grid);border-radius:14px;overflow:hidden;margin-bottom:16px}
+  .month header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fff7e6;border-bottom:1px solid var(--grid)}
+  .title{font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--grid)}
+  .dow,.cell{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);min-height:96px;display:flex;align-items:flex-start;justify-content:flex-end;padding:6px 8px;position:relative}
+  .dow{background:#fff7e6;font-size:12px;color:var(--muted);font-weight:600;min-height:auto;justify-content:center;padding:8px 0}
+  .cell{cursor:pointer;background:#fffdf8}
+  .cell.disabled{opacity:.45;pointer-events:none;background:#faf6ee}
+  .cell .num{font-weight:800;z-index:2}
+  .cell.inrange{background:var(--inrange);outline:2px solid #f0e4b0}
+  .snippet{
+    position:absolute;left:8px;right:8px;bottom:6px;
+    font-size:12px;color:var(--muted);text-align:left;
+    white-space:pre-line; line-height:1.25;
+    max-height:3.75em; overflow:hidden;
+    z-index:1; pointer-events:none;
+  }
+  .cell.lock{background:var(--lock)!important;outline:2px solid #f0b7b0}
+  .cell.lock .badge-lock{position:absolute;left:6px;top:6px;font-size:14px}
+  aside{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;position:sticky;top:10px;height:fit-content}
+  aside h2{font-size:16px;margin:4px 0}
+  .meta{color:var(--muted);font-size:13px;margin-top:-6px}
+  textarea{width:100%;min-height:180px;background:#fffdf8;color:#2c2a28;border:1px solid var(--grid);border-radius:10px;padding:10px;resize:vertical}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button,input[type=file]{background:#f4ead6;border:1px solid var(--grid);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
+  button.primary{background:var(--accent);color:#1f232b;border:none}
+  .inline{display:flex;gap:8px;align-items:center}
+  .tip{font-size:12px;color:var(--muted)}
+  footer{padding:10px 16px;color:var(--muted);font-size:12px}
+  .links{display:flex;gap:10px;flex-wrap:wrap}
+  a{color:var(--link);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Agenda de viaje</h1>
+  <div class="links">
+    <span>Rango: <strong>19/12/2025 → 17/01/2026</strong></span>
+    <a id="jump-agenda" href="#panel">Ir al día seleccionado</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="cal" id="cal">
+    <div class="cal-bg" id="calBg"></div>
+  </section>
+
+  <aside id="panel">
+    <h2 id="p-title">Seleccioná un día</h2>
+    <div class="meta" id="p-meta">Tocá una fecha del calendario.</div>
+    <textarea id="p-notes" placeholder="¿Qué vas a hacer este día? Lugares, horarios, reservas…"></textarea>
+    <div class="btns">
+      <button class="primary" id="save">Guardar</button>
+      <button id="lock">Marcar como inamovible</button>
+      <button id="clear">Borrar notas del día</button>
+      <button id="today">Ir al 19/12</button>
+      <button id="export">Exportar JSON</button>
+      <label class="inline">Importar <input id="import" type="file" accept="application/json"></label>
+    </div>
+    <div class="tip">Fondo fijo detrás del calendario, no se mueve al hacer scroll.</div>
+  </aside>
+</div>
+
+<footer>
+  Hecho para Ari. Sin conexión, 100% local.
+</footer>
+
+<script>
+const START = new Date(2025, 11, 19);
+const END   = new Date(2026, 0, 17);
+const months = [
+  {y:2025,m:12,label:"Diciembre 2025"},
+  {y:2026,m:1,label:"Enero 2026"}
+];
+const DOW = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+const calEl = document.getElementById('cal');
+const calBg = document.getElementById('calBg');
+const pTitle = document.getElementById('p-title');
+const pMeta  = document.getElementById('p-meta');
+const pNotes = document.getElementById('p-notes');
+const btnLock = document.getElementById('lock');
+let selectedDate = null;
+
+function fmt(d){
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
+}
+function withinRange(d){ return d>=START && d<=END; }
+function loadNotes(key){ return localStorage.getItem("trip:"+key) || ""; }
+function saveNotes(key,val){ localStorage.setItem("trip:"+key, val); markCells(); }
+function isLocked(key){ return localStorage.getItem("trip_lock:"+key) === "1"; }
+function setLocked(key, val){
+  if(val){ localStorage.setItem("trip_lock:"+key, "1"); }
+  else{ localStorage.removeItem("trip_lock:"+key); }
+  markCells();
+  updateLockButton();
+}
+
+function buildMonth(cfg){
+  const {y,m,label} = cfg;
+  const month = document.createElement('div');
+  month.className = 'month';
+  const head = document.createElement('header');
+  head.innerHTML = `<div class="title">${label}</div>`;
+  month.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+
+  for (const d of DOW){
+    const dow = document.createElement('div');
+    dow.className = 'dow';
+    dow.textContent = d;
+    grid.appendChild(dow);
+  }
+
+  const first = new Date(y, m-1, 1);
+  const lastDay = new Date(y, m, 0).getDate();
+  let offset = (first.getDay() + 6) % 7;
+
+  for (let i=0;i<offset;i++){
+    const empty = document.createElement('div');
+    empty.className = 'cell disabled';
+    grid.appendChild(empty);
+  }
+
+  for (let d=1; d<=lastDay; d++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const dateObj = new Date(y, m-1, d);
+    const key = fmt(dateObj);
+    cell.dataset.date = key;
+
+    const num = document.createElement('div');
+    num.className = 'num';
+    num.textContent = d;
+    cell.appendChild(num);
+
+    const sn = document.createElement('div');
+    sn.className = 'snippet';
+    cell.appendChild(sn);
+
+    if (withinRange(dateObj)){
+      cell.classList.add('inrange');
+    } else {
+      cell.classList.add('disabled');
+    }
+
+    cell.addEventListener('click', ()=> selectDate(dateObj));
+    grid.appendChild(cell);
+  }
+
+  while (grid.children.length % 7 !== 0){
+    const empty = document.createElement('div');
+    empty.className = 'cell disabled';
+    grid.appendChild(empty);
+  }
+
+  month.appendChild(grid);
+  return month;
+}
+
+function selectDate(d){
+  selectedDate = d;
+  const key = fmt(d);
+  pTitle.textContent = d.toLocaleDateString("es-AR",{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+  pMeta.textContent = `Clave: ${key}`;
+  pNotes.value = loadNotes(key);
+  updateLockButton();
+  location.hash = "#panel";
+}
+
+function updateLockButton(){
+  if (!selectedDate) return;
+  const key = fmt(selectedDate);
+  const locked = isLocked(key);
+  btnLock.textContent = locked ? "Quitar inamovible" : "Marcar como inamovible";
+}
+
+function sanitizeMultiline(s){
+  if (!s) return "";
+  return String(s).replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function markCells(){
+  document.querySelectorAll('.cell.inrange').forEach(cell => {
+    const key = cell.dataset.date;
+    if (!key) return;
+    const note = localStorage.getItem("trip:"+key) || "";
+    const sn = cell.querySelector('.snippet');
+    if (sn) sn.textContent = sanitizeMultiline(note);
+    if (localStorage.getItem("trip_lock:"+key) === "1"){
+      if (!cell.classList.contains('lock')){
+        cell.classList.add('lock');
+        if (!cell.querySelector('.badge-lock')){
+          const bl = document.createElement('div');
+          bl.className = 'badge-lock';
+          bl.textContent = "🔒";
+          cell.appendChild(bl);
+        }
+      }
+    } else {
+      cell.classList.remove('lock');
+      const exists = cell.querySelector('.badge-lock');
+      if (exists) exists.remove();
+    }
+  });
+}
+
+/* Mantener el fondo fijo y recortado al rectángulo del calendario */
+function fitFixedBgToCalendar(){
+  const r = calEl.getBoundingClientRect();
+  calBg.style.left = r.left + 'px';
+  calBg.style.top = r.top + 'px';
+  calBg.style.width = r.width + 'px';
+  calBg.style.height = r.height + 'px';
+}
+window.addEventListener('scroll', fitFixedBgToCalendar, {passive:true});
+window.addEventListener('resize', fitFixedBgToCalendar);
+new ResizeObserver(fitFixedBgToCalendar).observe(calEl);
+
+function start(){
+  months.forEach(cfg => calEl.appendChild(buildMonth(cfg)));
+  markCells();
+  selectDate(START);
+  fitFixedBgToCalendar();
+}
+
+document.getElementById('save').addEventListener('click', ()=>{
+  if (!selectedDate) return;
+  saveNotes(fmt(selectedDate), pNotes.value.trim());
+});
+
+document.getElementById('clear').addEventListener('click', ()=>{
+  if (!selectedDate) return;
+  localStorage.removeItem("trip:"+fmt(selectedDate));
+  pNotes.value = "";
+  markCells();
+});
+
+document.getElementById('today').addEventListener('click', ()=> selectDate(START));
+
+document.getElementById('export').addEventListener('click', ()=>{
+  const data = {};
+  for (let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k && k.startsWith("trip:")) data[k.slice(5)] = localStorage.getItem(k);
+    if (k && k.startsWith("trip_lock:")){
+      const key = k.slice(10);
+      if (!data.__locks) data.__locks = {};
+      data.__locks[key] = 1;
+    }
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "agenda-viaje.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('import').addEventListener('change', async (ev)=>{
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const txt = await file.text();
+  try{
+    const obj = JSON.parse(txt);
+    Object.entries(obj).forEach(([k,v])=> {
+      if (k === "__locks"){
+        Object.keys(v).forEach(key => localStorage.setItem("trip_lock:"+key, "1"));
+      } else {
+        localStorage.setItem("trip:"+k, v);
+      }
+    });
+    markCells();
+    if (selectedDate) {
+      pNotes.value = loadNotes(fmt(selectedDate));
+      updateLockButton();
+    }
+    alert("Importado OK");
+  }catch(e){ alert("Archivo inválido"); }
+});
+
+btnLock.addEventListener('click', ()=>{
+  if (!selectedDate) return;
+  const key = fmt(selectedDate);
+  const locked = isLocked(key);
+  setLocked(key, !locked);
+});
+
+start();
+</script>
+</body>
+</html>
