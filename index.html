@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda de viaje: 19/12/2025 → 17/01/2026</title>
+<style>
+  :root{
+    --bg:#eef5ff;
+    --panel:#f9fbff;
+    --accent:#1c6dd0;
+    --muted:#6d6a66;
+    --text:#2c2a28;
+    --grid:#e6decc;
+    --inrange:#dcecffcc;
+    --lock:#b6ccf7;
+    --link:#1c6dd0;
+  }
+  body.dark{
+    --bg:#111111;
+    --panel:rgba(24,24,24,.96);
+    --accent:#f2c94c;
+    --muted:#b9b9b9;
+    --text:#f5f5f5;
+    --grid:#333333;
+    --inrange:#40320fcc;
+    --lock:#5c2b2b;
+    --link:#6fa8ff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;
+    position:relative;
+  }
+  .bg-fixed{
+    position:fixed;
+    inset:0;
+    background-image:url('fondo_fuji.png');
+    background-size:cover;
+    background-position:center 82%;
+    background-repeat:no-repeat;
+    z-index:0;
+    pointer-events:none;
+    opacity:0.9;
+  }
+  body.dark .bg-fixed{opacity:0.4; filter:grayscale(.4);}
+  header{
+    position:sticky;
+    top:0;
+    padding:10px 16px;
+    border-bottom:1px solid var(--grid);
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    background:color-mix(in srgb, var(--panel) 92%, transparent);
+    backdrop-filter:blur(4px);
+    z-index:3;
+  }
+  header h1{font-size:18px;margin:0}
+  .wrap{
+    position:relative;
+    z-index:1;
+    display:grid;
+    grid-template-columns:1fr 360px;
+    gap:16px;
+    padding:16px;
+  }
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr}
+    aside{position:static; top:auto;}
+  }
+  .cal{
+    position:relative;
+    border-radius:14px;
+    overflow:hidden;
+    background:transparent;
+  }
+  .veil{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:transparent;
+    z-index:0;
+  }
+  body.dark .veil{
+    background:transparent;
+  }
+  .month{
+    border:1px solid var(--grid);
+    border-radius:14px;
+    overflow:hidden;
+    margin-bottom:16px;
+    background:transparent;
+  }
+  .month header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    background:color-mix(in srgb, var(--panel) 88%, transparent);
+    border-bottom:1px solid var(--grid);
+    backdrop-filter:saturate(120%) blur(.5px);
+  }
+  .title{font-weight:800}
+  .grid{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    border-top:1px solid var(--grid);
+  }
+  .dow,.cell{
+    border-right:1px solid var(--grid);
+    border-bottom:1px solid var(--grid);
+    min-height:96px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:flex-end;
+    padding:6px 8px;
+    position:relative;
+    background:transparent;
+  }
+  .dow{
+    background:color-mix(in srgb, var(--panel) 85%, transparent);
+    font-size:12px;
+    color:var(--muted);
+    font-weight:700;
+    min-height:auto;
+    justify-content:center;
+    padding:6px 0;
+  }
+  .cell{cursor:pointer}
+  .cell.disabled{
+    opacity:.45;
+    pointer-events:none;
+    background:color-mix(in srgb, var(--bg) 90%, transparent);
+  }
+  .cell .num{
+    font-weight:800;
+    z-index:2;
+    filter:drop-shadow(0 0 1px rgba(255,255,255,.6));
+  }
+  body.dark .cell .num{
+    filter:drop-shadow(0 0 2px rgba(0,0,0,.9));
+  }
+  .cell.inrange{
+    background:var(--inrange);
+  }
+  .snippet{
+    position:absolute;
+    left:8px;
+    right:8px;
+    bottom:6px;
+    font-size:12px;
+    color:var(--muted);
+    text-align:left;
+    white-space:pre-line;
+    line-height:1.25;
+    max-height:3.75em;
+    overflow:hidden;
+    z-index:1;
+    pointer-events:none;
+    text-shadow:0 1px 0 rgba(255,255,255,.5);
+  }
+  body.dark .snippet{
+    text-shadow:0 1px 2px rgba(0,0,0,.9);
+  }
+  .cell.lock{
+    background:var(--lock)!important;
+    outline:2px solid #f0b7b0;
+  }
+  body.dark .cell.lock{
+    outline-color:#ef8888;
+  }
+  .cell.lock .badge-lock{
+    position:absolute;
+    left:6px;
+    top:6px;
+    font-size:14px;
+  }
+  aside{
+    background:var(--panel);
+    border:1px solid var(--grid);
+    border-radius:14px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    position:sticky;
+    top:74px;
+    height:fit-content;
+    z-index:2;
+  }
+  aside h2{font-size:16px;margin:4px 0}
+  .meta{color:var(--muted);font-size:13px;margin-top:-6px}
+  textarea{
+    width:100%;
+    min-height:180px;
+    background:#fffdf8;
+    color:#2c2a28;
+    border:1px solid var(--grid);
+    border-radius:10px;
+    padding:10px;
+    resize:vertical;
+  }
+  body.dark textarea{
+    background:#181818;
+    color:#f5f5f5;
+  }
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button,input[type=file]{
+    background:#f4ead6;
+    border:1px solid var(--grid);
+    color:#2c2a28;
+    padding:7px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  button.primary{
+    background:var(--accent);
+    color:#1f232b;
+    border:none;
+  }
+  button.ghost{
+    background:transparent;
+    border:1px solid var(--grid);
+  }
+  body.dark button,input[type=file]{
+    background:#272727;
+    color:#f5f5f5;
+  }
+  body.dark button.primary{
+    background:var(--accent);
+    color:#1c1400;
+  }
+  button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+  .inline{display:flex;gap:8px;align-items:center}
+  .tip{font-size:12px;color:var(--muted)}
+  footer{
+    padding:10px 16px;
+    color:var(--muted);
+    font-size:12px;
+  }
+  .links{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  a{color:var(--link);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="bg-fixed" aria-hidden="true"></div>
+<header>
+  <h1>Agenda de viaje</h1>
+  <div class="links">
+    <span>Rango: <strong>19/12/2025 → 17/01/2026</strong></span>
+    <button id="btn-dark" class="ghost" type="button">Modo oscuro 🌙</button>
+    <button id="btn-edit" class="ghost" type="button">🔒 Solo lectura</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="cal" id="cal">
+    <div class="veil" aria-hidden="true"></div>
+  </section>
+
+  <aside id="panel">
+    <h2 id="p-title">viernes, 19 de diciembre de 2025</h2>
+    <div class="meta" id="p-meta">Clave: 2025-12-19</div>
+    <textarea id="p-notes" placeholder="¿Qué vas a hacer este día? Lugares, horarios, reservas…"></textarea>
+    <div class="btns">
+      <button class="primary" id="save" type="button">Guardar</button>
+      <button id="lock" type="button">Marcar como inamovible</button>
+      <button id="clear" type="button">Borrar notas del día</button>
+      <button id="today" type="button">Ir al 19/12</button>
+      <button id="export" type="button">Exportar JSON</button>
+      <label class="inline">Importar <input id="import" type="file" accept="application/json"></label>
+    </div>
+    <div class="tip">
+      Fondo fijo único. Notas sincronizadas con Firebase.<br>
+      Edición protegida por contraseña. Cambiala en la constante <code>EDIT_PASSWORD</code> del código.
+    </div>
+  </aside>
+</div>
+
+<footer>
+  Hecho para Ari. Sin conexión local + sincronización Firebase.
+</footer>
+
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+
+<script>
+/* ========= CONFIGURACIÓN FIREBASE ========= */
+const firebaseConfig = {
+  apiKey: "AIzaSyA-i2HNsKzwg5-xyEdQ2c_yOJ3fubhNLP4",
+  authDomain: "agenda-viaje.firebaseapp.com",
+  projectId: "agenda-viaje",
+  storageBucket: "agenda-viaje.firebasestorage.app",
+  messagingSenderId: "1016356002026",
+  appId: "1:1016356002026:web:2065f2f5c7e34d6745df93"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const notesCol = db.collection("agendaDias");
+
+/* ========= PARÁMETROS GLOBALES ========= */
+const START = new Date(2025, 11, 19); // 19/12/2025
+const END   = new Date(2026, 0, 17);  // 17/01/2026
+const months = [
+  {y:2025,m:12,label:"Diciembre 2025"},
+  {y:2026,m:1,label:"Enero 2026"}
+];
+const DOW = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+const calEl = document.getElementById('cal');
+const pTitle = document.getElementById('p-title');
+const pMeta  = document.getElementById('p-meta');
+const pNotes = document.getElementById('p-notes');
+const btnLock = document.getElementById('lock');
+const btnSave = document.getElementById('save');
+const btnClear= document.getElementById('clear');
+const btnToday= document.getElementById('today');
+const btnExport=document.getElementById('export');
+const inputImport=document.getElementById('import');
+const btnDark = document.getElementById('btn-dark');
+const btnEdit = document.getElementById('btn-edit');
+
+let selectedDate = START;
+let editingEnabled = false;
+/* Cambiá esta contraseña a la que quieras */
+const EDIT_PASSWORD = "Japon2025!";
+
+/* cache local de datos traídos de Firestore */
+const cache = {}; // { "YYYY-MM-DD": {note:"", locked:true/false} }
+
+function fmt(d){
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
+}
+function withinRange(d){ return d>=START && d<=END; }
+
+function getFromCache(key){
+  return cache[key] || {note:"", locked:false};
+}
+
+async function saveToFirestore(key, data){
+  try{
+    await notesCol.doc(key).set(data, {merge:true});
+  }catch(e){
+    console.error("Error guardando en Firestore", e);
+    alert("Error guardando en la nube. Tus datos pueden no haberse sincronizado.");
+  }
+}
+
+function buildMonth(cfg){
+  const {y,m,label} = cfg;
+  const month = document.createElement('div');
+  month.className = 'month';
+  const head = document.createElement('header');
+  head.innerHTML = `<div class="title">${label}</div>`;
+  month.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+
+  for (const d of DOW){
+    const dow = document.createElement('div');
+    dow.className = 'dow';
+    dow.textContent = d;
+    grid.appendChild(dow);
+  }
+
+  const first = new Date(y, m-1, 1);
+  const lastDay = new Date(y, m, 0).getDate();
+  let offset = (first.getDay() + 6) % 7; // lunes=0
+
+  for (let i=0;i<offset;i++){
+    const empty = document.createElement('div');
+    empty.className = 'cell disabled';
+    grid.appendChild(empty);
+  }
+
+  for (let d=1; d<=lastDay; d++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const dateObj = new Date(y, m-1, d);
+    const key = fmt(dateObj);
+    cell.dataset.date = key;
+
+    const num = document.createElement('div');
+    num.className = 'num';
+    num.textContent = d;
+    cell.appendChild(num);
+
+    const sn = document.createElement('div');
+    sn.className = 'snippet';
+    cell.appendChild(sn);
+
+    if (withinRange(dateObj)){
+      cell.classList.add('inrange');
+    } else {
+      cell.classList.add('disabled');
+    }
+    cell.addEventListener('click', ()=> selectDate(dateObj));
+    grid.appendChild(cell);
+  }
+
+  while (grid.children.length % 7 !== 0){
+    const empty = document.createElement('div');
+    empty.className = 'cell disabled';
+    grid.appendChild(empty);
+  }
+
+  month.appendChild(grid);
+  return month;
+}
+
+function selectDate(d){
+  selectedDate = d;
+  const key = fmt(d);
+  const data = getFromCache(key);
+  pTitle.textContent = d.toLocaleDateString("es-AR",{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+  pMeta.textContent = `Clave: ${key}`;
+  pNotes.value = data.note || "";
+  updateLockButton();
+}
+
+function updateLockButton(){
+  if (!selectedDate) return;
+  const key = fmt(selectedDate);
+  const {locked} = getFromCache(key);
+  btnLock.textContent = locked ? "Quitar inamovible" : "Marcar como inamovible";
+}
+
+function sanitizeMultiline(s){
+  if (!s) return "";
+  return String(s)
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+}
+
+function markCells(){
+  document.querySelectorAll('.cell.inrange').forEach(cell => {
+    const key = cell.dataset.date;
+    if (!key) return;
+    const data = getFromCache(key);
+    const sn = cell.querySelector('.snippet');
+    if (sn) sn.textContent = sanitizeMultiline(data.note || "");
+    if (data.locked){
+      if (!cell.classList.contains('lock')){
+        cell.classList.add('lock');
+        if (!cell.querySelector('.badge-lock')){
+          const bl = document.createElement('div');
+          bl.className = 'badge-lock';
+          bl.textContent = "🔒";
+          cell.appendChild(bl);
+        }
+      }
+    } else {
+      cell.classList.remove('lock');
+      const exists = cell.querySelector('.badge-lock');
+      if (exists) exists.remove();
+    }
+  });
+}
+
+/* ======== EDICIÓN PROTEGIDA ========= */
+function setEditingEnabled(on){
+  editingEnabled = on;
+  pNotes.readOnly = !on;
+  [btnSave, btnLock, btnClear, btnToday, btnExport, inputImport].forEach(el => {
+    if (!el) return;
+    el.disabled = !on; 
+  });
+  if (on){
+    btnEdit.textContent = "🔓 Edición habilitada";
+  }else{
+    btnEdit.textContent = "🔒 Solo lectura";
+  }
+}
+setEditingEnabled(false);
+
+function requireEdit(){
+  if (!editingEnabled){
+    alert("Está en modo solo lectura. Tocá en '🔒 Solo lectura' y poné la contraseña para habilitar edición.");
+    return false;
+  }
+  return true;
+}
+
+/* ======== INICIO ========= */
+function start(){
+  months.forEach(cfg => calEl.appendChild(buildMonth(cfg)));
+  // Suscripción en tiempo real a Firestore
+  notesCol.onSnapshot(snap => {
+    snap.docChanges().forEach(ch => {
+      const id = ch.doc.id;
+      const data = ch.doc.data() || {};
+      cache[id] = {
+        note: data.note || "",
+        locked: !!data.locked
+      };
+    });
+    markCells();
+    if (selectedDate) selectDate(selectedDate);
+  }, err => {
+    console.error("Error escuchando Firestore", err);
+  });
+  selectDate(START);
+}
+
+/* ======== EVENTOS ========= */
+btnSave.addEventListener('click', async ()=>{
+  if (!requireEdit()) return;
+  if (!selectedDate) return;
+  const key = fmt(selectedDate);
+  const curr = getFromCache(key);
+  const note = pNotes.value.trim();
+  cache[key] = {note, locked:curr.locked};
+  await saveToFirestore(key, cache[key]);
+});
+
+btnClear.addEventListener('click', async ()=>{
+  if (!requireEdit()) return;
+  if (!selectedDate) return;
+  const key = fmt(selectedDate);
+  const curr = getFromCache(key);
+  cache[key] = {note:"", locked:curr.locked};
+  pNotes.value = "";
+  await saveToFirestore(key, cache[key]);
+});
+
+btnToday.addEventListener('click', ()=> selectDate(START));
+
+btnLock.addEventListener('click', async ()=>{
+  if (!requireEdit()) return;
+  if (!selectedDate) return;
+  const key = fmt(selectedDate);
+  const curr = getFromCache(key);
+  const locked = !curr.locked;
+  cache[key] = {note:curr.note, locked};
+  await saveToFirestore(key, cache[key]);
+});
+
+btnExport.addEventListener('click', ()=>{
+  const out = {};
+  Object.keys(cache).forEach(k => {
+    out[k] = cache[k];
+  });
+  const blob = new Blob([JSON.stringify(out,null,2)], {type:"application/json"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "agenda-viaje-firebase.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+inputImport.addEventListener('change', async (ev)=>{
+  if (!requireEdit()) return;
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const txt = await file.text();
+  try{
+    const obj = JSON.parse(txt);
+    const batch = db.batch();
+    Object.entries(obj).forEach(([key,val])=>{
+      cache[key] = {note:val.note || "", locked:!!val.locked};
+      const ref = notesCol.doc(key);
+      batch.set(ref, cache[key], {merge:true});
+    });
+    await batch.commit();
+    markCells();
+    if (selectedDate) selectDate(selectedDate);
+    alert("Importado correctamente en Firebase.");
+  }catch(e){
+    console.error(e);
+    alert("Archivo inválido.");
+  }
+});
+
+btnDark.addEventListener('click', ()=>{
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  btnDark.textContent = isDark ? "Modo claro ☀️" : "Modo oscuro 🌙";
+});
+
+btnEdit.addEventListener('click', ()=>{
+  if (editingEnabled){
+    if (confirm("¿Querés volver a modo solo lectura?")){
+      setEditingEnabled(false);
+    }
+    return;
+  }
+  const pwd = prompt("Contraseña para editar:");
+  if (pwd === null) return;
+  if (pwd === EDIT_PASSWORD){
+    setEditingEnabled(true);
+  }else{
+    alert("Contraseña incorrecta.");
+  }
+});
+
+start();
+</script>
+</body>
+</html>
